@@ -45,10 +45,6 @@ public final class Constants {
         public static final int SHOOTER_LEAD_MOTOR = 20;
         public static final int SHOOTER_FOLLOW_MOTOR = 21;
 
-        // Hood
-
-        public static final int HOOD_MOTOR = 30;
-
         // Indexer
 
         public static final int INDEXER_MOTOR = 40;

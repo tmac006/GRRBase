@@ -11,7 +11,6 @@ import org.team340.lib.tunable.Tunables;
 import org.team340.lib.tunable.Tunables.TunableDouble;
 import org.team340.lib.tunable.Tunables.TunableInteger;
 import org.team340.robot.Robot;
-import org.team340.robot.subsystems.Hood;
 import org.team340.robot.subsystems.Indexer;
 import org.team340.robot.subsystems.Intake;
 import org.team340.robot.subsystems.Shooter;
@@ -27,11 +26,9 @@ public final class Routines {
     private static final TunableTable tunables = Tunables.getNested("routines");
 
     private static final TunableDouble staticShootDistance = tunables.value("staticShootDistance", 2.0);
-    private static final TunableDouble staticShootHoodPosition = tunables.value("staticShootHoodPosition", 3.0);
 
     private static final TunableInteger shootingMinRqTagsSeen = tunables.value("shootingMinRqTagsSeen", 25);
 
-    private final Hood hood;
     private final Indexer indexer;
     private final Intake intake;
     private final Shooter shooter;
@@ -39,7 +36,6 @@ public final class Routines {
     private final Uptake uptake;
 
     public Routines(Robot robot) {
-        hood = robot.hood;
         indexer = robot.indexer;
         intake = robot.intake;
         shooter = robot.shooter;
@@ -84,15 +80,13 @@ public final class Routines {
      */
     public Command shoot(BooleanSupplier runIntake, BooleanSupplier force) {
         return parallel(
-            hood.targetDistance(swerve::targetDistance),
             shooter.targetDistance(swerve::targetDistance),
             sequence(
                 sequence(
                     waitSeconds(0.05),
                     waitUntil(
                         () ->
-                            (hood.atPosition()
-                                && shooter.atVelocity()
+                            (shooter.atVelocity()
                                 && swerve.aimingAtTarget()
                                 && swerve.tagsSeen() >= shootingMinRqTagsSeen.get())
                             || force.getAsBoolean()
@@ -112,10 +106,9 @@ public final class Routines {
      */
     public Command staticShoot() {
         return parallel(
-            hood.targetDistance(staticShootHoodPosition),
             shooter.targetDistance(staticShootDistance),
             indexer.feed()
-        ).withName("Routines.shoot()");
+        ).withName("Routines.staticShoot()");
     }
 
     /**
@@ -137,7 +130,6 @@ public final class Routines {
     public Command driverShootShutdown(DoubleSupplier x, DoubleSupplier y) {
         return deadline(
             waitSeconds(0.4),
-            hood.targetDistance(swerve::targetDistance),
             shooter.targetDistance(swerve::targetDistance),
             swerve.aimAtTarget(x, y)
         ).withName("Routines.driverShootShutdown()");
@@ -156,7 +148,7 @@ public final class Routines {
         return sequence(
             intake.intake().asProxy().withTimeout(2.0),
             parallel(indexer.feed(), intake.agitate()).asProxy().withTimeout(2.0),
-            parallel(intake.stow(), hood.targetDistance(targetDistance), shooter.targetDistance(targetDistance))
+            parallel(intake.stow(), shooter.targetDistance(targetDistance))
                 .beforeStarting(timer::restart)
                 .asProxy()
                 .withTimeout(SHOOT_TIME)

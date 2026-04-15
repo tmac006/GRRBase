@@ -15,7 +15,6 @@ import org.team340.lib.tunable.Tunables.TunableDouble;
 import org.team340.lib.tunable.Tunables.TunableInteger;
 import org.team340.lib.util.command.AutoChooser;
 import org.team340.robot.Robot;
-import org.team340.robot.subsystems.Hood;
 import org.team340.robot.subsystems.Intake;
 import org.team340.robot.subsystems.Shooter;
 import org.team340.robot.subsystems.Swerve;
@@ -46,7 +45,6 @@ public final class Autos {
     private static final TunableDouble depotDeceleration = depotTunables.value("deceleration", 4.0);
     private static final TunableDouble depotEndTolerance = depotTunables.value("endTolerance", 0.04);
 
-    private final Hood hood;
     private final Intake intake;
     private final Shooter shooter;
     private final Swerve swerve;
@@ -55,7 +53,6 @@ public final class Autos {
     private final AutoChooser chooser;
 
     public Autos(Robot robot) {
-        hood = robot.hood;
         intake = robot.intake;
         shooter = robot.shooter;
         swerve = robot.swerve;
@@ -317,7 +314,6 @@ public final class Autos {
     private Command getReady() {
         return parallel(
             intake.intake(),
-            hood.targetDistance(swerve::targetDistance),
             shooter.targetDistance(swerve::targetDistance)
         ).asProxy();
     }

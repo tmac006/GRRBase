@@ -15,7 +15,6 @@ import org.team340.lib.util.command.RumbleCommand;
 import org.team340.lib.util.vendors.PhoenixUtil;
 import org.team340.robot.commands.Autos;
 import org.team340.robot.commands.Routines;
-import org.team340.robot.subsystems.Hood;
 import org.team340.robot.subsystems.Indexer;
 import org.team340.robot.subsystems.Intake;
 import org.team340.robot.subsystems.Shooter;
@@ -28,7 +27,6 @@ public final class Robot extends LoggedRobot {
 
     private final CommandScheduler scheduler = CommandScheduler.getInstance();
 
-    public final Hood hood;
     public final Indexer indexer;
     public final Intake intake;
     public final Shooter shooter;
@@ -46,7 +44,6 @@ public final class Robot extends LoggedRobot {
         PhoenixUtil.disableDaemons();
 
         // Initialize subsystems
-        hood = new Hood();
         indexer = new Indexer();
         intake = new Intake();
         shooter = new Shooter();
@@ -65,7 +62,6 @@ public final class Robot extends LoggedRobot {
 
         // Set default commands
         intake.setDefaultCommand(intake.extend());
-        hood.setDefaultCommand(hood.goToZero(false));
         swerve.setDefaultCommand(swerve.drive(this::driverX, this::driverY, this::driverAngular));
 
         // Create triggers
@@ -85,7 +81,6 @@ public final class Robot extends LoggedRobot {
             .onFalse(routines.driverShootShutdown(this::driverX, this::driverY));
 
         driver.povLeft().onTrue(swerve.tareRotation());
-        driver.povDown().whileTrue(hood.goToZero(true));
 
         driver.start().and(driver.back()).whileTrue(routines.testSequence());
 
