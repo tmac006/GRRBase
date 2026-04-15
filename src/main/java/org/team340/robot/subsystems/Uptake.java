@@ -28,7 +28,8 @@ public final class Uptake extends GRRSubsystem {
 
     private static enum State {
         FEED(78.0),
-        BARF(-75.0);
+        BARF(-75.0),
+        CREEP(-10.0);
 
         public final TunableDouble speed;
 
@@ -84,6 +85,14 @@ public final class Uptake extends GRRSubsystem {
      */
     public Command barf() {
         return runState(State.BARF).withName("Uptake.barf()");
+    }
+
+    /**
+     * Slowly reverses to prevent the note from feeding prematurely.
+     * @return creep command
+     */
+    public Command creep() {
+        return runState(State.CREEP).withName("Uptake.creep()");
     }
 
     /**

@@ -15,6 +15,7 @@ import org.team340.lib.util.command.RumbleCommand;
 import org.team340.lib.util.vendors.PhoenixUtil;
 import org.team340.robot.commands.Autos;
 import org.team340.robot.commands.Routines;
+import org.team340.robot.subsystems.Hopper;
 import org.team340.robot.subsystems.Indexer;
 import org.team340.robot.subsystems.Intake;
 import org.team340.robot.subsystems.Shooter;
@@ -27,6 +28,7 @@ public final class Robot extends LoggedRobot {
 
     private final CommandScheduler scheduler = CommandScheduler.getInstance();
 
+    public final Hopper hopper;
     public final Indexer indexer;
     public final Intake intake;
     public final Shooter shooter;
@@ -44,6 +46,7 @@ public final class Robot extends LoggedRobot {
         PhoenixUtil.disableDaemons();
 
         // Initialize subsystems
+        hopper = new Hopper();
         indexer = new Indexer();
         intake = new Intake();
         shooter = new Shooter();
@@ -61,24 +64,19 @@ public final class Robot extends LoggedRobot {
         driver = new CommandXboxController(Constants.DRIVER);
 
         // Set default commands
-        intake.setDefaultCommand(intake.extend());
+        hopper.setDefaultCommand(hopper.retract());
+        intake.setDefaultCommand(intake.stow());
         swerve.setDefaultCommand(swerve.drive(this::driverX, this::driverY, this::driverAngular));
 
         // Create triggers
-        var shoot = driver.leftBumper().or(driver.rightBumper());
         new Trigger(() -> shiftTracker.shiftTimeLeft() < 5.0)
             .onTrue(new RumbleCommand(driver, 1.0).withTimeout(0.3).onlyIf(this::isTeleop))
             .onFalse(new RumbleCommand(driver, 1.0).withTimeout(0.6).onlyIf(this::isTeleop));
 
         // Driver bindings
-        driver.a().and(shoot.negate()).whileTrue(routines.intake());
-        driver.b().onTrue(routines.barf()).onFalse(routines.finishBarf());
-        driver.x().whileTrue(routines.staticShoot());
-        driver.y().onTrue(none()); // Reserved for shoot override
-
-        shoot
-            .onTrue(routines.driverShoot(this::driverX, this::driverY, driver.a(), driver.y()))
-            .onFalse(routines.driverShootShutdown(this::driverX, this::driverY));
+        driver.a().onTrue(routines.barf()).onFalse(routines.finishBarf());
+        driver.leftTrigger().whileTrue(routines.intake());
+        driver.rightTrigger().whileTrue(routines.shoot());
 
         driver.povLeft().onTrue(swerve.tareRotation());
 
@@ -112,6 +110,6 @@ public final class Robot extends LoggedRobot {
 
     @NotLogged
     private double driverAngular() {
-        return driver.getLeftTriggerAxis() - driver.getRightTriggerAxis();
+        return driver.getRightX();
     }
 }

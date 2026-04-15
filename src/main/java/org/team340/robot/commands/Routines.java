@@ -4,13 +4,12 @@ import static edu.wpi.first.wpilibj2.command.Commands.*;
 
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import org.team340.lib.tunable.TunableTable;
 import org.team340.lib.tunable.Tunables;
 import org.team340.lib.tunable.Tunables.TunableDouble;
-import org.team340.lib.tunable.Tunables.TunableInteger;
 import org.team340.robot.Robot;
+import org.team340.robot.subsystems.Hopper;
 import org.team340.robot.subsystems.Indexer;
 import org.team340.robot.subsystems.Intake;
 import org.team340.robot.subsystems.Shooter;
@@ -27,8 +26,7 @@ public final class Routines {
 
     private static final TunableDouble staticShootDistance = tunables.value("staticShootDistance", 2.0);
 
-    private static final TunableInteger shootingMinRqTagsSeen = tunables.value("shootingMinRqTagsSeen", 25);
-
+    private final Hopper hopper;
     private final Indexer indexer;
     private final Intake intake;
     private final Shooter shooter;
@@ -36,6 +34,7 @@ public final class Routines {
     private final Uptake uptake;
 
     public Routines(Robot robot) {
+        hopper = robot.hopper;
         indexer = robot.indexer;
         intake = robot.intake;
         shooter = robot.shooter;
@@ -44,60 +43,40 @@ public final class Routines {
     }
 
     /**
-     * Runs the intake.
+     * Deploys the intake and extends the hopper to channel fuel.
      */
     public Command intake() {
-        return intake.intake();
+        return parallel(hopper.extend(), intake.intake()).withName("Routines.intake()");
     }
 
     /**
      * Barfs fuel out of the intake.
      */
     public Command barf() {
-        return parallel(sequence(waitSeconds(0.25), indexer.barf().asProxy()), intake.barf()).withName(
-            "Routines.barf()"
-        );
+        return parallel(
+            sequence(waitSeconds(0.25), indexer.barf().asProxy(), uptake.barf().asProxy()),
+            intake.barf()
+        ).withName("Routines.barf()");
     }
 
     /**
      * Finishes barfing fuel by purging then stowing.
      */
     public Command finishBarf() {
-        return sequence(intake.purge().until(intake::isStowed), intake.stow());
+        return sequence(intake.purge().until(intake::isStowed), intake.stow()).withName("Routines.finishBarf()");
     }
 
     /**
-     * Shoots at the hub, without commanding the drivetrain.
+     * Spins up the shooter, holds the note back with a slow reverse creep on the
+     * indexer and uptake, then feeds once the shooter is at velocity.
      */
     public Command shoot() {
-        return shoot(() -> false, () -> false);
-    }
-
-    /**
-     * Shoots at the hub, without commanding the drivetrain.
-     * @param runIntake Whether the intake should also be intaking.
-     * @param force A supplier that if {@code true} will force the indexer to feed the shooter.
-     */
-    public Command shoot(BooleanSupplier runIntake, BooleanSupplier force) {
         return parallel(
             shooter.targetDistance(swerve::targetDistance),
             sequence(
-                sequence(
-                    waitSeconds(0.05),
-                    waitUntil(
-                        () ->
-                            (shooter.atVelocity()
-                                && swerve.aimingAtTarget()
-                                && swerve.tagsSeen() >= shootingMinRqTagsSeen.get())
-                            || force.getAsBoolean()
-                    )
-                ).deadlineFor(indexer.barf().withTimeout(0.25)),
-                indexer.feed()
-            ),
-            sequence(
-                race(waitUntil(runIntake), waitSeconds(0.75)),
-                either(intake.intake().onlyWhile(runIntake), intake.agitate().until(runIntake), runIntake)
-            ).repeatedly()
+                parallel(indexer.creep(), uptake.creep()).until(shooter::atVelocity),
+                parallel(indexer.feed(), uptake.feed())
+            )
         ).withName("Routines.shoot()");
     }
 
@@ -107,32 +86,8 @@ public final class Routines {
     public Command staticShoot() {
         return parallel(
             shooter.targetDistance(staticShootDistance),
-            indexer.feed()
+            parallel(indexer.feed(), uptake.feed())
         ).withName("Routines.staticShoot()");
-    }
-
-    /**
-     * Shoots at the hub, with driver input and automated heading aim.
-     * @param x The X value from the driver's joystick.
-     * @param y The Y value from the driver's joystick.
-     * @param runIntake Whether the intake should also be intaking.
-     * @param force A supplier that if {@code true} will force the indexer to feed the .
-     */
-    public Command driverShoot(DoubleSupplier x, DoubleSupplier y, BooleanSupplier runIntake, BooleanSupplier force) {
-        return parallel(shoot(runIntake, force), swerve.aimAtTarget(x, y)).withName("Routines.driverShoot()");
-    }
-
-    /**
-     * Aim at the hub without running the indexer (to get in last shots).
-     * @param x The X value from the driver's joystick.
-     * @param y The Y value from the driver's joystick.
-     */
-    public Command driverShootShutdown(DoubleSupplier x, DoubleSupplier y) {
-        return deadline(
-            waitSeconds(0.4),
-            shooter.targetDistance(swerve::targetDistance),
-            swerve.aimAtTarget(x, y)
-        ).withName("Routines.driverShootShutdown()");
     }
 
     /**
@@ -147,7 +102,7 @@ public final class Routines {
 
         return sequence(
             intake.intake().asProxy().withTimeout(2.0),
-            parallel(indexer.feed(), intake.agitate()).asProxy().withTimeout(2.0),
+            parallel(indexer.feed(), uptake.feed(), intake.agitate()).asProxy().withTimeout(2.0),
             parallel(intake.stow(), shooter.targetDistance(targetDistance))
                 .beforeStarting(timer::restart)
                 .asProxy()
