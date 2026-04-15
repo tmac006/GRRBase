@@ -1,5 +1,7 @@
 package org.team340.robot;
 
+import com.ctre.phoenix6.CANBus;
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -11,7 +13,6 @@ public final class Constants {
 
     // Controller ports
     public static final int DRIVER = 0;
-    public static final int CO_DRIVER = 1;
 
     /**
      * The RobotMap class defines CAN IDs, CAN bus names, DIO/PWM/PH/PCM channel
@@ -19,7 +20,9 @@ public final class Constants {
      */
     public static final class RobotMap {
 
-        public static final String LOWER_CAN = "LowerCAN";
+        public static final CANBus CANBus = new CANBus("canivore");
+
+        // Swerve
 
         public static final int FL_MOVE = 2;
         public static final int FL_TURN = 3;
@@ -36,5 +39,31 @@ public final class Constants {
         public static final int BR_ENCODER = 13;
 
         public static final int CANANDGYRO = 14;
+
+        // Shooter
+
+        public static final int SHOOTER_LEAD_MOTOR = 20;
+        public static final int SHOOTER_FOLLOW_MOTOR = 21;
+
+        // Hood
+
+        public static final int HOOD_MOTOR = 30;
+
+        // Indexer
+
+        public static final int INDEXER_MOTOR = 40;
+
+        // Uptake
+
+        public static final int UPTAKE_LEAD_MOTOR = 44;
+        public static final int UPTAKE_FOLLOW_MOTOR = 45;
+
+        // Intake
+
+        public static final int INTAKE_PIVOT_LEAD_MOTOR = 50;
+        public static final int INTAKE_ROLLER_LEAD_MOTOR = 51;
+        public static final int INTAKE_ROLLER_FOLLOW_MOTOR = 52;
+        public static final int INTAKE_WCP_THROUGHBORE_POWERED_BY_CANCODER_FOR_HALF_INCH_HEX = 53;
+        public static final int INTAKE_PIVOT_FOLLOW_MOTOR = 54;
     }
 }

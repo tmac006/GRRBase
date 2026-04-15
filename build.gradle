@@ -1,7 +1,7 @@
 plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2026.2.1"
-    id "com.diffplug.spotless" version "8.2.1"
+    id "com.diffplug.spotless" version "8.4.0"
     id 'com.github.node-gradle.node' version '7.1.0'
 }
 
@@ -12,7 +12,7 @@ java {
 
 node {
     download = true
-    version = '24.13.0'
+    version = '24.14.1'
     workDir = file("${buildDir}/nodejs")
 }
 
@@ -41,9 +41,9 @@ deploy {
                     jvmArgs.add('-XX:MaxGCPauseMillis=50')
 
                     // Only enable these arguments when using a RIO 2
-                    // jvmArgs.add('-Xmx100M')
-                    // jvmArgs.add('-Xms100M')
-                    // jvmArgs.add('-XX:+AlwaysPreTouch')
+                    jvmArgs.add('-Xmx100M')
+                    jvmArgs.add('-Xms100M')
+                    jvmArgs.add('-XX:+AlwaysPreTouch')
 
                     // Enable VisualVM connection
                     // jvmArgs.add('-Dcom.sun.management.jmxremote=true')
@@ -116,7 +116,7 @@ spotless {
         endWithNewline()
         removeUnusedImports()
         trimTrailingWhitespace()
-        prettier(['prettier': '3.8.1', 'prettier-plugin-java': '2.8.1'])
+        prettier(['prettier': '3.8.2', 'prettier-plugin-java': '2.8.1'])
             .npmExecutable("${tasks.named('npmSetup').get().npmDir.get()}${File.separator}${npmExec}")
             .config([
                 parser: 'java',
